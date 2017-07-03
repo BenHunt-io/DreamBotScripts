@@ -5,10 +5,6 @@
  */
 package awtswing;
 
-import static awtswing.AWTSwing.initializeBottomPanel;
-import static awtswing.AWTSwing.initializeLeftPanel;
-import static awtswing.AWTSwing.initializeMenu;
-import static awtswing.AWTSwing.initializeRightPanel;
 import java.awt.Checkbox;
 import java.awt.CheckboxGroup;
 import java.awt.Color;
@@ -36,7 +32,7 @@ import javax.swing.JScrollPane;
  *
  * @author Ben
  */
-public class MultiBoxGui extends JFrame{
+public class MultiBoxGui{
     
     private JFrame myFrame; // Main frame for the window
     // outermost layout placed in frame, other layouts placed in this
@@ -52,7 +48,7 @@ public class MultiBoxGui extends JFrame{
      * 
      */
     public MultiBoxGui(){
-        myFrame = new AWTSwing.MyWindow();
+        myFrame = new MyWindow();
         flowLayout = new FlowLayout();
         myFrame.setLayout(flowLayout);
         panel = new Panel();
@@ -73,6 +69,10 @@ public class MultiBoxGui extends JFrame{
 //       
         
         myFrame.setVisible(true);
+    }
+    
+    public class MyWindow extends JFrame{
+        
     }
     
     public void initializeMenu(JFrame myFrame){
