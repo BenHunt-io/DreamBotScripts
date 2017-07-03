@@ -40,6 +40,37 @@ public class MultiBoxGui{
     // GridBagLayout panel will go inside flowlayout, will store left/top/bottom panels
     private Panel panel; 
     
+    ////////// Right Panel /////////////////
+    
+    public Label meleeLabel;
+    public JButton meleeButton;
+    
+    public Label rangeLabel;
+    public JButton rangeButton;
+    
+    public Label mageLabel;
+    public JButton mageButton;
+    
+    public Label eatLabel;
+    public JButton eatButton;
+    
+    public Label drinkLabel;
+    public JButton drinkButton;
+    public JList potionList;
+    
+    public Label specialAtkLabel;
+    public JButton specialAttackBtn;
+    
+    public JButton tradeButton;
+    
+    public Label abandonShip;
+    public JButton abandonShipButton;
+    
+    
+    ////////// Left Panel /////////////////////
+    
+    
+    
     
     /**
      * Sets up the GUI. The JFrame, myFrame, has a flowLayout
@@ -217,7 +248,7 @@ public class MultiBoxGui{
         
         
         
-        Label meleeLabel = new Label("Bronze sword");
+        meleeLabel = new Label("Bronze sword");
         meleeLabel.setForeground(Color.WHITE);
         
         c = new GridBagConstraints();
@@ -235,7 +266,7 @@ public class MultiBoxGui{
         URL url2 = AWTSwing.class.getResource("/awtswing/Drawables/thesword_clicked.png");
         ImageIcon icon2 = new ImageIcon(url2);
         
-        JButton meleeButton = new JButton();
+        meleeButton = new JButton();
         meleeButton.setIcon(icon);
         // Create empty border, so it's just the picture
         meleeButton.setBorder(BorderFactory.createEmptyBorder());
@@ -255,7 +286,7 @@ public class MultiBoxGui{
         
         
         
-        Label rangeLabel = new Label("Willow shortbow");
+        rangeLabel = new Label("Willow shortbow");
         rangeLabel.setForeground(Color.WHITE);
         
         c = new GridBagConstraints();
@@ -266,7 +297,7 @@ public class MultiBoxGui{
         
         
         
-        JButton rangeButton = new JButton();
+        rangeButton = new JButton();
         rangeButton.setIcon(icon);
         // Create empty border, so it's just the picture
         rangeButton.setBorder(BorderFactory.createEmptyBorder());
@@ -285,7 +316,7 @@ public class MultiBoxGui{
         rightPanel.add(rangeButton,c);
         
         
-        Label mageLabel = new Label("Staff of Air");
+        mageLabel = new Label("Staff of Air");
         mageLabel.setForeground(Color.WHITE);
         
         c = new GridBagConstraints();
@@ -295,7 +326,7 @@ public class MultiBoxGui{
         rightPanel.add(mageLabel,c);
         
         
-        JButton mageButton = new JButton();
+        mageButton = new JButton();
         mageButton.setIcon(icon);
         // Create empty border, so it's just the picture
         mageButton.setBorder(BorderFactory.createEmptyBorder());
@@ -317,7 +348,7 @@ public class MultiBoxGui{
         
         
         
-        Label eatLabel = new Label("Trout");
+        eatLabel = new Label("Trout");
         eatLabel.setForeground(Color.WHITE);
         
         c = new GridBagConstraints();
@@ -327,7 +358,7 @@ public class MultiBoxGui{
         rightPanel.add(eatLabel,c);
         
         
-        JButton eatButton = new JButton();
+        eatButton = new JButton();
         eatButton.setIcon(icon);
         // Create empty border, so it's just the picture
         eatButton.setBorder(BorderFactory.createEmptyBorder());
@@ -345,7 +376,7 @@ public class MultiBoxGui{
         
         rightPanel.add(eatButton,c);
         
-        Label drinkLabel = new Label("Strength Potion");
+        drinkLabel = new Label("Strength Potion");
         drinkLabel.setForeground(Color.WHITE);
         
         c = new GridBagConstraints();
@@ -356,7 +387,7 @@ public class MultiBoxGui{
         rightPanel.add(drinkLabel,c);
         
         
-        JButton drinkButton = new JButton();
+        drinkButton = new JButton();
         drinkButton.setIcon(icon);
         // Create empty border, so it's just the picture
         drinkButton.setBorder(BorderFactory.createEmptyBorder());
@@ -378,7 +409,7 @@ public class MultiBoxGui{
         
         String[] potionArray = {"Strength Potion", "Attack Potion", "Defence Potion"
                 , "Range Potion", "Mage Potion"};
-        JList potionList = new JList(potionArray);
+        potionList = new JList(potionArray);
         potionList.setVisibleRowCount(4);
         
         JScrollPane potionScrollPane = new JScrollPane(potionList);
@@ -394,7 +425,7 @@ public class MultiBoxGui{
         
         
         
-        Label specialAtkLabel = new Label("Special Attack");
+        specialAtkLabel = new Label("Special Attack");
         specialAtkLabel.setForeground(Color.WHITE);
         
         c = new GridBagConstraints();
@@ -410,7 +441,7 @@ public class MultiBoxGui{
         ImageIcon specialAttackIcon = new ImageIcon(specialAtkUrl);
         
        
-        JButton specialAttackBtn = new JButton(specialAttackIcon);
+        specialAttackBtn = new JButton(specialAttackIcon);
         specialAttackBtn.setBorder(BorderFactory.createEmptyBorder());
         specialAttackBtn.setContentAreaFilled(false);
         
@@ -427,7 +458,7 @@ public class MultiBoxGui{
         
         URL tradeButtonUrl = AWTSwing.class.getResource("/awtswing/Drawables/trade_button.png");
         ImageIcon tradeButtonIcon = new ImageIcon(tradeButtonUrl);
-        JButton tradeButton = new JButton(tradeButtonIcon);
+        tradeButton = new JButton(tradeButtonIcon);
         tradeButton.setBorder(BorderFactory.createEmptyBorder());
         tradeButton.setContentAreaFilled(false);
         
@@ -443,7 +474,7 @@ public class MultiBoxGui{
         
         
         
-        Label abandonShip = new Label("Abandon Ship");
+        abandonShip = new Label("Abandon Ship");
         abandonShip.setForeground(Color.WHITE);
         
         c = new GridBagConstraints();
@@ -459,7 +490,7 @@ public class MultiBoxGui{
         
         URL abandonShipUrl = AWTSwing.class.getResource("/awtswing/Drawables/abandon_ship.png");
         ImageIcon abandonShipIcon = new ImageIcon(abandonShipUrl);
-        JButton abandonShipButton = new JButton(abandonShipIcon);
+        abandonShipButton = new JButton(abandonShipIcon);
         abandonShipButton.setBorder(BorderFactory.createEmptyBorder());
         abandonShipButton.setContentAreaFilled(false);
         

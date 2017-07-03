@@ -4,23 +4,30 @@
  * and open the template in the editor.
  */
 package awtswing;
+
 /**
  *
  * @author Ben
  */
 public class AWTSwing {
 
+    
+    private static MultiBoxGui multiBoxGui;
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) {
         // TODO code application logic here
         
-        
-        MultiBoxGui multiBoxGui = new MultiBoxGui();
+        // Class that sets up and handles everything GUI!
+        multiBoxGui = new MultiBoxGui();
+        CombatListener combatListener = new CombatListener(multiBoxGui);
+        multiBoxGui.meleeButton.addActionListener(combatListener);
 
     }
     
   
+   
+       
    
 }
