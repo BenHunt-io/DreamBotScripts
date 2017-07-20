@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="src" path="/RSBot/src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/KotlinJavaRuntime"/>
+	<classpathentry exported="true" kind="var" path="USER_HOME/DreamBot/BotData/client.jar"/>
+	<classpathentry exported="true" kind="var" path="USER_HOME/Downloads/sqlite-jdbc-3.19.3.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

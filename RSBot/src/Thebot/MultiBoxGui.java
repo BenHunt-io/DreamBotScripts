@@ -1,22 +1,31 @@
 package Thebot;
 
 import org.dreambot.api.Client;
+import org.dreambot.api.methods.MethodContext;
+import org.dreambot.api.methods.interactive.Players;
+import org.dreambot.api.methods.world.World;
+import org.dreambot.api.methods.world.Worlds;
+import org.dreambot.api.wrappers.interactive.Player;
 
 import javax.swing.*;
+import javax.swing.plaf.TabbedPaneUI;
+import javax.swing.plaf.basic.BasicTabbedPaneUI;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.prefs.Preferences;
+import java.util.List;
 
 import static org.dreambot.api.methods.MethodProvider.log;
 
 /**
  * Created by Ben on 7/3/2017.
  */
-public class MultiBoxGui {
+public class MultiBoxGui extends MethodContext{
 
 
     private JFrame startJFrame; // first window that pops up to the user to select a lead user
@@ -25,9 +34,13 @@ public class MultiBoxGui {
     // outermost layout placed in frame, other layouts placed in this
     private FlowLayout flowLayout;
     // GridBagLayout panel will go inside flowlayout, will store left/top/bottom panels
-    private Panel panel;
+    private Panel mainPanel; // Panel for main tab
+    private Panel settingsPanel; // Pain for settings Panel
 
     private Preferences preferences;
+
+    private JTabbedPane jTabbedPane;
+
 
     ////////// Right Panel /////////////////
 
@@ -40,24 +53,91 @@ public class MultiBoxGui {
     public Label mageLabel;
     public JButton mageButton;
 
+    public Label manualCastLabel;
+    public JButton manualCastButton;
+
     public Label eatLabel;
     public JButton eatButton;
 
+
     public Label drinkLabel;
     public JButton drinkButton;
+
+    public JList castSpellList;
+    public JScrollPane castSpellScrollPane;
+
+    JButton tradeButton;
+
+    public DefaultListModel potionListModel;
     public JList potionList;
-
-    public Label specialAtkLabel;
-    public JButton specialAttackBtn;
-
-    public JButton tradeButton;
 
     public Label abandonShip;
     public JButton abandonShipButton;
 
+    public Label specialAtkLabel;
+    public JButton specialAttackBtn;
 
     ////////// Left Panel /////////////////////
 
+    public JList groundItemList;
+    public DefaultListModel groundItemLM;
+    public JScrollPane groundItemScroll;
+    public Label recentKillLbl;
+
+    ////////// Settings Panel /////////////////
+
+    public JLabel setMeleeWeaponLbl;
+    public JTextField meleeField;
+    public JButton saveMeleeWeapon;
+
+    public JLabel setRangeWeaponLbl;
+    public JTextField RangeField;
+    public JButton saveRangeWeapon;
+
+    public JLabel setMageWeaponLbl;
+    public JTextField MageField;
+    public JButton saveMageWeapon;
+
+    public JLabel setFoodLbl;
+    public JTextField FoodField;
+    public JButton saveFood;
+
+    public JLabel setPotionLbl;
+    public JTextField PotionField;
+    public JButton savePotion;
+
+    public JLabel setSpellLbl;
+    public JTextField spellField;
+    public JButton saveSpell;
+
+    public Checkbox autoCast;
+    public JButton saveAutoCast;
+    public JButton deleteSpell;
+    public JList spellList;
+    public DefaultListModel spellListModel;
+    public JScrollPane spellScrollPane;
+
+
+    /////////// Bottom Panel //////////////////////////
+
+    // World Hopper
+    public JList worldHopperList;
+    public DefaultListModel worldHopLM;
+    public JLabel worldHopLabel;
+    public JScrollPane scrollPaneHopper;
+    public JButton hopWorldBtn;
+
+    public JButton logout;
+    public JButton logoutAll;
+
+
+    ////////// Init Start Frame ////////////////////////
+
+    public Label selectLeadUserLbl;
+    public JList leadUserList;
+
+    JButton refreshButton;
+    JButton submitButton;
 
 
 
@@ -68,20 +148,43 @@ public class MultiBoxGui {
      * Also passes in preferences reference that was created in the main class
      */
     public MultiBoxGui(Preferences preferences){
+
+        this.preferences = preferences; // saves the preferences reference so we can write and read
+
+
         myFrame = new JFrame();
         flowLayout = new FlowLayout();
         myFrame.setLayout(flowLayout);
-        panel = new Panel();
-        panel.setLayout(new GridBagLayout());
-        myFrame.add(panel);
+        mainPanel = new Panel();
+        mainPanel.setLayout(new GridBagLayout());
+        settingsPanel = new Panel();
+        settingsPanel.setLayout(new GridBagLayout());
 
 
         myFrame.setLocationRelativeTo(null); // null = Center of client
-        myFrame.setBounds(500,250,511,518); // Window size
+        myFrame.setBounds(500,250,532,532); // Window size
         Container frameContainer = myFrame.getContentPane();
-        frameContainer.setBackground(new Color(83,75,51,255)); // Light Brownish
+        frameContainer.setBackground(new Color(239,239,239,255)); // OffWhite
 
-        this.preferences = preferences; // saves the preferences reference so we can write and read
+        // Record when window closes and opens
+        myFrame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                log("Window Closing");
+                preferences.putBoolean("JFrameInstanceOpen", false);
+                super.windowClosed(e);
+            }
+            @Override
+            public void windowOpened(WindowEvent e) {
+                log("Window Opened");
+                preferences.putBoolean("JFrameInstanceOpen", true);
+                super.windowOpened(e);
+            }
+        });
+
+
+
+
     }
 
 
@@ -89,14 +192,12 @@ public class MultiBoxGui {
      * Starts first frame that pops up to the user. User selects Lead User before going to the main GUI. have to pass
      * in Client so we can set locationRelativeTo the client.
      */
-    public void initStartFrame(Client client) {
+    public void initStartFrame(Client client, Players players, MethodContext methodContext) {
 
-
-        preferences.putBoolean("JFrameInstanceOpen", true);
 
 
         startJFrame = new JFrame("Specify Lead Player");
-        startJFrame.setBounds(0, 0, 285, 75);
+        startJFrame.setBounds(0, 0, 180, 315);
         startJFrame.setAlwaysOnTop(true);
         startJFrame.setLocationRelativeTo(client.getInstance().getCanvas()); // Make the jframe start in the middle of the client
 
@@ -124,26 +225,61 @@ public class MultiBoxGui {
 
 
 
-        TextField setLeadUser = new TextField();
-        setLeadUser.setName("Set Lead User");
-        c.ipadx = 75; // Make the Textfield longer by giving it extra padding
+        selectLeadUserLbl = new Label("Select Lead User");
+        selectLeadUserLbl.setForeground(Color.white);
+        c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = 0;
-        c.insets = new Insets(0,14,0,7);
+        c.gridwidth = 2;
 
-        pane.add(setLeadUser, c);
+        pane.add(selectLeadUserLbl, c);
 
-        JButton submitButton = new JButton("Submit");
+
+        DefaultListModel leadUserLM = new DefaultListModel();
+        leadUserList = new JList(leadUserLM);
+
+        //leadUserList.setPreferredSize(new Dimension(100,200));
+        leadUserList.setVisibleRowCount(4);
+
+        JScrollPane leadUserScrollPane = new JScrollPane(leadUserList);
+        leadUserScrollPane.setPreferredSize(new Dimension(100, 200));
+
+
+
+        // Insert all found players into table
+        if(players != null) {
+            for (int i = 0; i < players.all().size(); i++){
+                leadUserLM.insertElementAt(players.all().get(i).getName(),i);
+            }
+        }
+
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 1;
+        c.gridwidth = 2;
+
+
+        pane.add(leadUserScrollPane, c);
+
+        refreshButton = new JButton("Refresh");
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 2;
+
+        pane.add(refreshButton,c);
+
+
+        submitButton = new JButton("Submit");
+        c = new GridBagConstraints();
         c.gridx = 1;
-        c.gridy = 0;
-        c.insets = new Insets(0,7,0,14);
+        c.gridy = 2;
 
         submitButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                preferences.put("LeadUser", setLeadUser.getText().toString());
+                preferences.put("LeadUser", leadUserList.getSelectedValue().toString());
                 //preferences.putBoolean("JFrameInstanceOpen", true);
-                log("Button was clicked");
+                log("Button was clicked: " + leadUserList.getSelectedValue().toString());
                 synchronized (MyBot.class){ // The object with the lock is the class itself.
                     MyBot.class.notify(); // Release the lock on "this" which is referring to the class itself. Could be another object
                     // This is used so that only the first Jframe is shown until the button is clicked, then the Notify
@@ -160,32 +296,76 @@ public class MultiBoxGui {
 
         pane.add(submitButton,c);
 
+        // Refresh list of players to select Lead User from
+        refreshButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                log("Refresh Button Clicked");
+                if (methodContext.getPlayers() != null) {
+                    leadUserLM.removeAllElements();
+                    List<Player> playerList = methodContext.getPlayers().all();
+                    int counter = 0;
+                    for (Player player : playerList) {
+                        log("adding players on refresh: " + playerList.size());
+                        leadUserLM.insertElementAt(player.getName(), counter);
+                        counter++;
+                    }
+                }
+            }
+        });
+
+
+
         startJFrame.setVisible(true); // Have to set visible after components are added
     }
 
     public void displayMultiBoxGui(){
+
         initializeMenu(myFrame);
-        initializeLeftPanel(panel);
-        initializeRightPanel(panel);
-        initializeBottomPanel(panel);
+        initializeLeftPanel(mainPanel);
+        initializeRightPanel(mainPanel);
+        initializeBottomPanel(mainPanel);
+
+        initializeSettingsPanel(settingsPanel);
+        initializeTabs();
+        myFrame.add(jTabbedPane);
+
 
 
         myFrame.setVisible(true);
     }
 
-    public void initializeMenu(JFrame myFrame){
 
-        Menu main = new Menu("Main");
-        Menu settings = new Menu("Settings");
+    // Initializes Tabs look and feel. Adds
+    public void initializeTabs(){
+        // Set UI managers default tab selected colors. In the method installDefaults in the BasicTabbedPaneUI, it will
+        // get the color for selected that we put here
+        UIManager.put("TabbedPane.selected", Color.DARK_GRAY);
+        // Default tabs at the top, no scroll
+        jTabbedPane = new JTabbedPane();
 
-        MenuBar menuBar = new MenuBar();
-        menuBar.add(main);
-        menuBar.add(settings);
+        jTabbedPane.addTab("Main", mainPanel);
+        jTabbedPane.addTab("Settings", settingsPanel);
+        jTabbedPane.setBackground(new Color(83,75,51,255));
+        jTabbedPane.setBorder(BorderFactory.createEmptyBorder());
+        jTabbedPane.setForeground(Color.WHITE);
 
-        myFrame.setMenuBar(menuBar);
+
     }
 
-    public void initializeLeftPanel(Panel panel){
+    public void initializeMenu(JFrame myFrame){
+
+//        Menu main = new Menu("Main");
+//        Menu settings = new Menu("Settings");
+//
+//        MenuBar menuBar = new MenuBar();
+//        menuBar.add(main);
+//        menuBar.add(settings);
+//
+//        myFrame.setMenuBar(menuBar);
+    }
+
+    public void initializeLeftPanel(Panel mainPanel){
 
         GridBagConstraints c; // to set constraints of stuff
 
@@ -230,9 +410,9 @@ public class MultiBoxGui {
 
         final int size = 4;
         String[] accounts = {"Archer5252", "Zezima", "DudeKilla", "PkMasta"};
-        List multiboxedAccounts = new List();
+        JList multiboxedAccounts = new JList();
         for(int i = 0; i<size; i++){
-            multiboxedAccounts.add(accounts[i]);
+            multiboxedAccounts.add(new Label(accounts[i]));
         }
 
 
@@ -264,24 +444,29 @@ public class MultiBoxGui {
 
 
 
-        Label inventoryListLabel = new Label("Recent Kill By: Zezima");
-        inventoryListLabel.setForeground(Color.WHITE);
+        recentKillLbl = new Label("Recent Kill By: ");
+        recentKillLbl.setForeground(Color.WHITE);
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = 4;
         c.gridwidth = 2;
 
-        leftPanel.add(inventoryListLabel,c);
+        leftPanel.add(recentKillLbl,c);
 
 
         String[] inventoryItems = {"Bronze arrow", "Bronze sword", "RunePlatebody", "sword",
                 "Bones", "Gold", "Cowhide"};
 
-        JList inventoryList = new JList(inventoryItems);
-        inventoryList.setVisibleRowCount(5);
+        groundItemLM = new DefaultListModel();
+
+        groundItemList = new JList(groundItemLM);
+        groundItemList.setVisibleRowCount(5);
 
         // Make the list scrollable by putting it in a JScrollPane
-        JScrollPane inventoryScroll = new JScrollPane(inventoryList);
+        groundItemScroll = new JScrollPane(groundItemList);
+
+        groundItemList.setPreferredSize(new Dimension(105,95));
+        groundItemScroll.setPreferredSize(new Dimension(105,95));
 
 
         c = new GridBagConstraints();
@@ -290,7 +475,7 @@ public class MultiBoxGui {
         c.gridwidth = 2;
         c.insets = new Insets(0,0,15,0);
 
-        leftPanel.add(inventoryScroll,c);
+        leftPanel.add(groundItemScroll,c);
 
 
         // Constraints for the whole left panel
@@ -299,12 +484,12 @@ public class MultiBoxGui {
         c.gridy = 0;
         c.anchor = GridBagConstraints.PAGE_START;
         c.insets = new Insets(15,0,0,15);
-        panel.add(leftPanel, c);
+        mainPanel.add(leftPanel, c);
 
 
     }
 
-    public void initializeRightPanel(Panel panel){
+    public void initializeRightPanel(Panel mainPanel){
 
 
         GridBagConstraints c;
@@ -412,6 +597,32 @@ public class MultiBoxGui {
         rightPanel.add(mageButton,c);
 
 
+        manualCastLabel = new Label("Cast: ");
+        manualCastLabel.setForeground(Color.WHITE);
+
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 2;
+        c.insets = new Insets(10,0,0,0);
+        rightPanel.add(manualCastLabel,c);
+
+
+        manualCastButton = new JButton();
+        manualCastButton.setIcon(icon);
+        // Create empty border, so it's just the picture
+        manualCastButton.setBorder(BorderFactory.createEmptyBorder());
+        // Transparent Background, to hide default square button background
+        manualCastButton.setContentAreaFilled(false);
+
+        manualCastButton.setPressedIcon(icon2);
+
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 3;
+
+        rightPanel.add( manualCastButton,c);
+
+
 
 
 
@@ -419,7 +630,7 @@ public class MultiBoxGui {
         eatLabel.setForeground(Color.WHITE);
 
         c = new GridBagConstraints();
-        c.gridx = 0;
+        c.gridx = 1;
         c.gridy = 2;
         c.insets = new Insets(10,0,0,0);
         rightPanel.add(eatLabel,c);
@@ -435,11 +646,8 @@ public class MultiBoxGui {
         eatButton.setPressedIcon(icon2);
 
         c = new GridBagConstraints();
-        c.gridx = 0;
+        c.gridx = 1;
         c.gridy = 3;
-//        c.weightx =1.0;
-//        c.weighty =1.0;
-//        c.anchor = GridBagConstraints.FIRST_LINE_START;
 
         rightPanel.add(eatButton,c);
 
@@ -447,7 +655,7 @@ public class MultiBoxGui {
         drinkLabel.setForeground(Color.WHITE);
 
         c = new GridBagConstraints();
-        c.gridx = 1;
+        c.gridx = 2;
         c.gridy = 2;
         c.insets = new Insets(10,0,0,0);
 
@@ -464,7 +672,7 @@ public class MultiBoxGui {
         drinkButton.setPressedIcon(icon2);
 
         c = new GridBagConstraints();
-        c.gridx = 1;
+        c.gridx = 2;
         c.gridy = 3;
 
 //        c.weightx =1.0;
@@ -474,17 +682,61 @@ public class MultiBoxGui {
         rightPanel.add(drinkButton,c);
 
 
-        String[] potionArray = {"Strength Potion", "Attack Potion", "Defence Potion"
-                , "Range Potion", "Mage Potion"};
-        potionList = new JList(potionArray);
+
+
+        // List of spells to use in manual casting. Holds reference to spellList in settings
+        // Potion List
+        spellListModel = new DefaultListModel();
+
+        castSpellList = new JList(spellListModel);
+        castSpellList.setVisibleRowCount(4);
+        castSpellList.setPreferredSize(new Dimension(125,75));
+
+        castSpellScrollPane = new JScrollPane(castSpellList);
+        castSpellScrollPane.setPreferredSize(new Dimension(125,75));
+
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 4;
+        c.gridheight = 1;
+        c.insets = new Insets(10,0,0,0);
+
+
+        rightPanel.add(castSpellScrollPane,c);
+
+
+
+
+        // Trade Button
+        URL tradeButtonUrl = getClass().getResource("/Drawables/trade_button.png");
+        ImageIcon tradeButtonIcon = new ImageIcon(tradeButtonUrl);
+        tradeButton = new JButton(tradeButtonIcon);
+        tradeButton.setBorder(BorderFactory.createEmptyBorder());
+        tradeButton.setContentAreaFilled(false);
+
+        c = new GridBagConstraints();
+        c.gridx = 1;
+        c.gridy = 4;
+        c.gridheight = 1; // takes up two rows in height
+
+
+        rightPanel.add(tradeButton,c);
+
+
+
+        // Potion List
+        potionListModel = new DefaultListModel();
+        potionList = new JList(potionListModel);
         potionList.setVisibleRowCount(4);
+        potionList.setPreferredSize(new Dimension(125,75));
 
         JScrollPane potionScrollPane = new JScrollPane(potionList);
+        potionScrollPane.setPreferredSize(new Dimension(125,75));
 
         c = new GridBagConstraints();
         c.gridx = 2;
-        c.gridy = 2;
-        c.gridheight = 2;
+        c.gridy = 4;
+        c.gridheight = 1;
         c.insets = new Insets(10,0,0,0);
 
 
@@ -492,14 +744,45 @@ public class MultiBoxGui {
 
 
 
+
+
+        abandonShip = new Label("Abandon Ship");
+        abandonShip.setForeground(Color.WHITE);
+
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 6;
+
+
+        rightPanel.add(abandonShip,c);
+
+        System.out.println("test");
+        URL abandonShipUrl = getClass().getResource("/Drawables/abandon_ship.png");
+        ImageIcon abandonShipIcon = new ImageIcon(abandonShipUrl);
+        abandonShipButton = new JButton(abandonShipIcon);
+        abandonShipButton.setBorder(BorderFactory.createEmptyBorder());
+        abandonShipButton.setContentAreaFilled(false);
+
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 7;
+        c.gridheight = 1; // takes up two rows in height
+
+        rightPanel.add(abandonShipButton,c);
+
+
+
+        // Special Attack Button
         specialAtkLabel = new Label("Special Attack");
         specialAtkLabel.setForeground(Color.WHITE);
 
         c = new GridBagConstraints();
-        c.gridx = 0;
-        c.gridy = 4;
+        c.gridx = 1;
+        c.gridy = 6;
         c.gridwidth = 1;
-        c.gridheight= 1;
+        c.gridheight= 2;
+        c.anchor = GridBagConstraints.PAGE_START;
+        c.insets = new Insets(5,0,0,0);
 
         rightPanel.add(specialAtkLabel,c);
 
@@ -513,60 +796,13 @@ public class MultiBoxGui {
         specialAttackBtn.setContentAreaFilled(false);
 
         c = new GridBagConstraints();
-        c.gridx = 0;
-        c.gridy = 4;
+        c.gridx = 1;
+        c.gridy = 6;
         c.gridwidth = 1;
-        c.gridheight = 3;
+        c.gridheight = 2;
+        c.anchor = GridBagConstraints.CENTER;
 
         rightPanel.add(specialAttackBtn,c);
-
-
-
-
-        URL tradeButtonUrl = getClass().getResource("/Drawables/trade_button.png");
-        ImageIcon tradeButtonIcon = new ImageIcon(tradeButtonUrl);
-        tradeButton = new JButton(tradeButtonIcon);
-        tradeButton.setBorder(BorderFactory.createEmptyBorder());
-        tradeButton.setContentAreaFilled(false);
-
-        c = new GridBagConstraints();
-        c.gridx = 1;
-        c.gridy = 4;
-        c.gridheight = 3; // takes up two rows in height
-
-
-        rightPanel.add(tradeButton,c);
-
-
-
-
-
-        abandonShip = new Label("Abandon Ship");
-        abandonShip.setForeground(Color.WHITE);
-
-        c = new GridBagConstraints();
-        c.gridx = 2;
-        c.gridy = 4;
-
-
-        rightPanel.add(abandonShip,c);
-
-
-
-        System.out.println("test");
-        URL abandonShipUrl = getClass().getResource("/Drawables/abandon_ship.png");
-        ImageIcon abandonShipIcon = new ImageIcon(abandonShipUrl);
-        abandonShipButton = new JButton(abandonShipIcon);
-        abandonShipButton.setBorder(BorderFactory.createEmptyBorder());
-        abandonShipButton.setContentAreaFilled(false);
-
-        c = new GridBagConstraints();
-        c.gridx = 2;
-        c.gridy = 5;
-        c.gridheight = 2; // takes up two rows in height
-
-
-        rightPanel.add(abandonShipButton,c);
 
 
 
@@ -585,11 +821,11 @@ public class MultiBoxGui {
         c.insets = new Insets(15,0,0,0);
 
 
-        panel.add(rightPanel, c);
+        mainPanel.add(rightPanel, c);
 
     }
 
-    public static void initializeBottomPanel(Panel panel){
+    public void initializeBottomPanel(Panel mainPanel){
 
 
         GridBagConstraints c;
@@ -603,7 +839,7 @@ public class MultiBoxGui {
 
 
 
-        Label worldHopLabel = new Label("Mass World Hopper");
+        worldHopLabel = new JLabel("Mass World Hopper");
         worldHopLabel.setForeground(Color.WHITE);
 
         c = new GridBagConstraints();
@@ -619,12 +855,17 @@ public class MultiBoxGui {
 
 
 
-        String[] worlds = {"World 342 F2P 1520", "World 333 MEM 1063",
-                "World 342 F2P 1520", "World 333 MEM 1063","World 342 F2P 1520",
-                "World 333 MEM 1063"};
-        JList worldHopperList = new JList(worlds);
+//        String[] worlds = {"World 342 F2P 1520", "World 333 MEM 1063",
+//                "World 342 F2P 1520", "World 333 MEM 1063","World 342 F2P 1520",
+//                "World 333 MEM 1063"};
+        worldHopLM = new DefaultListModel();
+        worldHopperList = new JList(worldHopLM);
         worldHopperList.setVisibleRowCount(4);
-        JScrollPane scrollPaneHopper = new JScrollPane(worldHopperList);
+
+        scrollPaneHopper = new JScrollPane(worldHopperList);
+
+        scrollPaneHopper.setPreferredSize(new Dimension(140,75));
+
 
         //scrollPaneHopper.add(worldHopper);
 
@@ -639,7 +880,7 @@ public class MultiBoxGui {
 
         bottomPanel.add(scrollPaneHopper,c);
 
-        JButton hopWorldBtn = new JButton("Hop");
+        hopWorldBtn = new JButton("Hop");
 
         c = new GridBagConstraints();
         c.gridx = 0;
@@ -653,7 +894,7 @@ public class MultiBoxGui {
 
 
 
-        JButton logout = new JButton("Logout");
+        logout = new JButton("Logout");
 
         c = new GridBagConstraints();
         c.gridx = 1;
@@ -665,7 +906,7 @@ public class MultiBoxGui {
         bottomPanel.add(logout,c);
 
 
-        JButton logoutAll = new JButton("Logout All");
+        logoutAll = new JButton("Logout All");
 
         c = new GridBagConstraints();
         c.gridx = 2;
@@ -690,7 +931,272 @@ public class MultiBoxGui {
         //c.anchor = GridBagConstraints.FIRST_LINE_START;
         c.insets = new Insets(15,0,0,0);
 
-        panel.add(bottomPanel,c);
+        mainPanel.add(bottomPanel,c);
+
+    }
+
+    public void initializeSettingsPanel(Panel settingsPanel){
+
+        GridBagConstraints c; // Constraints for the different components
+        Dimension textboxDimensions = new Dimension(120,20);
+
+
+        // Set the Melee Weapon
+        setMeleeWeaponLbl = new JLabel("Set Melee Weapon");
+        setMeleeWeaponLbl.setForeground(Color.WHITE);
+
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 0;
+        c.insets = new Insets(0,0,10,10);
+
+        settingsPanel.add(setMeleeWeaponLbl,c);
+
+
+        meleeField = new JTextField();
+
+        c = new GridBagConstraints();
+        c.gridx = 1;
+        c.gridy = 0;
+        c.insets = new Insets(0,0,10,10);
+
+        meleeField.setPreferredSize(textboxDimensions);
+
+        settingsPanel.add(meleeField,c);
+
+
+        saveMeleeWeapon = new JButton("Save");
+
+        c = new GridBagConstraints();
+        c.gridx = 2;
+        c.gridy = 0;
+        c.insets = new Insets(0,0,10,0);
+
+        settingsPanel.add(saveMeleeWeapon,c);
+
+
+
+        // Set the range weapon
+        setRangeWeaponLbl = new JLabel("Set Range Weapon");
+        setRangeWeaponLbl.setForeground(Color.WHITE);
+
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 1;
+        c.insets = new Insets(0,0,10,10);
+
+        settingsPanel.add(setRangeWeaponLbl,c);
+
+
+        RangeField = new JTextField();
+
+        c = new GridBagConstraints();
+        c.gridx = 1;
+        c.gridy = 1;
+        c.insets = new Insets(0,0,10,10);
+
+        RangeField.setPreferredSize(textboxDimensions);
+
+        settingsPanel.add(RangeField,c);
+
+
+        saveRangeWeapon = new JButton("Save");
+
+        c = new GridBagConstraints();
+        c.gridx = 2;
+        c.gridy = 1;
+        c.insets = new Insets(0,0,10,0);
+
+        settingsPanel.add(saveRangeWeapon,c);
+
+
+
+        // Set the Mage weapon
+        setMageWeaponLbl = new JLabel("Set Mage Weapon");
+        setMageWeaponLbl.setForeground(Color.WHITE);
+
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 2;
+        c.insets = new Insets(0,0,10,10);
+
+        settingsPanel.add(setMageWeaponLbl,c);
+
+
+        MageField = new JTextField();
+
+        c = new GridBagConstraints();
+        c.gridx = 1;
+        c.gridy = 2;
+        c.insets = new Insets(0,0,10,10);
+
+        MageField.setPreferredSize(textboxDimensions);
+
+        settingsPanel.add(MageField,c);
+
+
+        saveMageWeapon = new JButton("Save");
+
+        c = new GridBagConstraints();
+        c.gridx = 2;
+        c.gridy = 2;
+        c.insets = new Insets(0,0,10,0);
+
+        settingsPanel.add(saveMageWeapon,c);
+
+
+        // Set Food
+        setFoodLbl = new JLabel("Set Food Weapon");
+        setFoodLbl.setForeground(Color.WHITE);
+
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 3;
+        c.insets = new Insets(0,0,10,10);
+
+        settingsPanel.add(setFoodLbl,c);
+
+
+        FoodField = new JTextField();
+
+        c = new GridBagConstraints();
+        c.gridx = 1;
+        c.gridy = 3;
+        c.insets = new Insets(0,0,10,10);
+
+        FoodField.setPreferredSize(textboxDimensions);
+
+        settingsPanel.add(FoodField,c);
+
+
+        saveFood = new JButton("Save");
+
+        c = new GridBagConstraints();
+        c.gridx = 2;
+        c.gridy = 3;
+        c.insets = new Insets(0,0,10,0);
+
+        settingsPanel.add(saveFood,c);
+
+
+        // Set/Add potions
+        setPotionLbl = new JLabel("Add Potion to List");
+        setPotionLbl.setForeground(Color.WHITE);
+
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 4;
+        c.insets = new Insets(0,0,10,10);
+
+        settingsPanel.add(setPotionLbl,c);
+
+
+        PotionField = new JTextField();
+
+        c = new GridBagConstraints();
+        c.gridx = 1;
+        c.gridy = 4;
+        c.insets = new Insets(0,0,10,10);
+
+        PotionField.setPreferredSize(textboxDimensions);
+
+        settingsPanel.add(PotionField,c);
+
+        savePotion= new JButton("Save");
+
+        c = new GridBagConstraints();
+        c.gridx = 2;
+        c.gridy = 4;
+        c.insets = new Insets(0,0,10,0);
+
+        settingsPanel.add(savePotion,c);
+
+
+
+        // Add Spells to use
+        setSpellLbl = new JLabel("Add Spell");
+        setSpellLbl.setForeground(Color.WHITE);
+
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 5;
+        c.insets = new Insets(0,0,10,10);
+
+        settingsPanel.add(setSpellLbl,c);
+
+
+        spellField = new JTextField();
+
+        c = new GridBagConstraints();
+        c.gridx = 1;
+        c.gridy = 5;
+        c.insets = new Insets(0,0,10,10);
+
+        spellField.setPreferredSize(textboxDimensions);
+
+        settingsPanel.add(spellField,c);
+
+
+        saveSpell= new JButton("Save");
+
+        c = new GridBagConstraints();
+        c.gridx = 2;
+        c.gridy = 5;
+        c.insets = new Insets(0,0,10,0);
+
+        settingsPanel.add(saveSpell,c);
+
+
+
+
+        // To Deal with autocasting/manual casting
+        autoCast = new Checkbox("Auto Cast Enabled: ");
+
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 6;
+        c.insets = new Insets(0,0,10,0);
+
+        settingsPanel.add(autoCast,c);
+
+
+        // Put list in scrollPane, then put that in the outer GridBagLayout pane like the other components
+        // Potion List. SpellListModel is the same ListModel used in both settings and main tab. Doing this allows
+        // the spells to updated on both simotaneously
+        spellList = new JList(spellListModel);
+        spellList.setVisibleRowCount(4);
+        spellList.setPreferredSize(new Dimension(125,75));
+
+
+        spellScrollPane = new JScrollPane(spellList);
+        spellScrollPane.setPreferredSize(new Dimension(125,75));
+
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 7;
+        c.gridheight = 1;
+        c.insets = new Insets(10,0,10,0);
+
+
+        settingsPanel.add(spellScrollPane,c);
+
+        saveAutoCast = new JButton("Save Autocast Spell");
+
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 8;
+        c.insets = new Insets(0,0,5,0);
+
+        settingsPanel.add(saveAutoCast,c);
+
+        deleteSpell = new JButton("Delete Spell");
+
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 9;
+        c.insets = new Insets(0,0,10,0);
+
+        settingsPanel.add(deleteSpell,c);
 
     }
 }
