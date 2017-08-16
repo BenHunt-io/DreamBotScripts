@@ -1,3 +1,7 @@
+import org.dreambot.api.methods.MethodContext;
+import org.dreambot.api.methods.container.impl.equipment.EquipmentSlot;
+import org.dreambot.api.wrappers.items.Item;
+
 import java.util.HashMap;
 
 /**
@@ -5,22 +9,43 @@ import java.util.HashMap;
  */
 public class Equipment {
 
-    private HashMap<String, Integer> equipment;
+    private int ammoStartCount; // Starting ammt of ammo
+    private int ammoID; // Item Id of the Ammo, Default value of 0
+    private int currentAmmoCount; // current Ammo of the user
 
-    public Equipment(){
-        equipment = new HashMap<>();
+    public Equipment(int ammoID, int ammoStartCount) {
+        this.ammoID = ammoID;
+        this.ammoStartCount = ammoStartCount;
     }
 
-    public int getAmmo(){
-        return equipment.getOrDefault("Ammo", -1);
+    public void setEquipment(int ammoId, int ammoStartCount){
+        this.ammoID = ammoId;
+        this.ammoStartCount = ammoStartCount;
     }
 
-    public int getStartingAmmoCount() {
-
-        return equipment.getOrDefault("AmmoCount",-1);
+    public int getAmmoId(){
+        return ammoID;
     }
 
-    public void putEquipment(String key, int id){
-         equipment.put(key,id);
+    public int getAmmoStartCount(){
+        return ammoStartCount;
+    }
+
+    // Gets and Sets the current Ammo Count
+
+
+    int getCurrentAmmoCount(MethodContext methodContext){
+        if(!methodContext.getEquipment().isSlotEmpty(EquipmentSlot.ARROWS.getSlot())) {
+            this.currentAmmoCount = methodContext.getEquipment().getItemInSlot(EquipmentSlot.ARROWS.getSlot()).getAmount();
+            return this.currentAmmoCount;
+        }
+        else
+            return 0;
+    }
+
+
+
+    public int getWithdrawlAmt(){
+        return (ammoStartCount - currentAmmoCount);
     }
 }

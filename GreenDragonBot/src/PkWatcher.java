@@ -1,3 +1,5 @@
+import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
+import org.dreambot.api.input.Mouse;
 import org.dreambot.api.methods.MethodContext;
 import org.dreambot.api.methods.container.impl.equipment.EquipmentSlot;
 import org.dreambot.api.methods.filter.Filter;
@@ -15,6 +17,7 @@ import org.dreambot.api.wrappers.interactive.Character;
 import org.dreambot.api.wrappers.interactive.NPC;
 import org.dreambot.api.wrappers.interactive.Player;
 import org.dreambot.api.wrappers.items.Item;
+import org.dreambot.api.wrappers.widgets.Menu;
 import org.dreambot.api.wrappers.widgets.WidgetChild;
 
 import java.lang.reflect.Array;
@@ -24,6 +27,8 @@ import java.util.List;
 import java.util.Random;
 
 import static org.dreambot.api.methods.MethodProvider.log;
+import static org.dreambot.api.methods.MethodProvider.sleep;
+import static org.dreambot.api.methods.MethodProvider.sleepUntil;
 
 /**
  * Created by Ben on 7/26/2017.
@@ -34,13 +39,11 @@ public class PkWatcher implements Runnable {
     private MethodContext context;
     private String status;
     private List<Player> playersList;
-    private ArrayList<NPC> greenDragList;
     private HashMap<String,Boolean> threatMap;
     private Object combatLock;
 
     private Thread mainThread;
     private Thread pkWatcherThread;
-    private Thread deathWatchThread;
     private InterruptFlag interruptFlag;
     private ScriptManager scriptManager;
 
@@ -73,27 +76,27 @@ public class PkWatcher implements Runnable {
     @Override
     public void run(){
 
+
+
+
         log("start of run");
         try {
             Thread.sleep(3000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        // Populate list of green dragons in the area
-        greenDragList = (ArrayList<NPC>) context.getNpcs().all(npc -> npc.getName().equals("Green dragon")); // Don't really need this
-        log("yo dawg");
+
         // returns a list of players that can attack local player
         //playersList = (ArrayList)context.getPlayers().all(player -> player!= null && canAttack(player) && player.getName().equals(localPlayer.getName()));
 
 
-        log((status.equals("Walking to Dragons")) + " " );
-        while((status.equals("Attacking Dragons") || status.equals("Walking to Dragons")) && !Thread.interrupted()) {
+        while(Main.getStatus().equals("Attacking Dragons") || Main.getStatus().equals("Walking to Dragons") && !Thread.interrupted() && scriptManager.isRunning()) {
 
             playersList = (context.getPlayers().all(player -> canAttack(player) && threatMap.getOrDefault(player.getName(), true)
                     && !player.getName().equals(localPlayer.getName())));
 
             // do nothing, let it sleep after the else
-            log("player list is empty");
+           // log("player list is empty");
             if (playersList.isEmpty()) {
                 try {
                     Thread.sleep(rand.nextInt(500) + 300);
@@ -107,7 +110,7 @@ public class PkWatcher implements Runnable {
 
             // Skulled
             else {
-                log("Checking skulled " + playersList.size());
+                //log("Checking skulled " + playersList.size());
                 for (int i = 0; i < playersList.size(); i++) {
                     if (playersList.get(i).isSkulled()) {
                         escapeTeleport();
@@ -137,7 +140,7 @@ public class PkWatcher implements Runnable {
 
             for (int i = 0; i < playersList.size(); i++) {
                 Player player = playersList.get(i);
-                log("before sleeping to wait for interaction with Player: " + player.getName());
+               // log("before sleeping to wait for interaction with Player: " + player.getName());
                 if(MethodContext.sleepUntil(() -> player.isInteractedWith() || player.isInteracting(localPlayer), rand.nextInt(8000) + 6500)){
                     log("After waiting for player to interact with something");
                     if (player.isInteracting(localPlayer)) {
@@ -165,10 +168,6 @@ public class PkWatcher implements Runnable {
 
     }
 
-    public void setStatus(String status){
-        this.status = status;
-    }
-
 
     public boolean canAttack(Player player){
 
@@ -190,36 +189,71 @@ public class PkWatcher implements Runnable {
     }
 
 
-    public void escapeTeleport(){
+    /**
+     * Tries to teleport away, if it fails and is teleblocked.. it will try to escape run.. aka run away to the bank.
+     *
+     */
+    public void escapeTeleport() {
+
+
+
+        // For teleporting
+        WidgetChild gloryWidget;
+        Mouse mouse = context.getMouse();
+        Menu gloryMenu = new Menu(context.getClient());
+
         log("Before escape tele interrupt");
-        interruptFlag.interrupt(); // As to interrupt the flow of execution of the code.
-        synchronized (combatLock){
+        if (Main.getStatus().equals("Attacking Dragons") || Main.getStatus().equals("Walking to Dragons"))
+            interruptFlag.interrupt(); // As to interrupt the flow of execution of the code.
+        else
+            return;
+        synchronized (combatLock) {
+            Main.setSubStatus("Anti-PK: Escaping");
             log("should teleport");
             // Tele to edge
             context.getEquipment().open();
             context.sleepUntil(() -> Tab.EQUIPMENT.isOpen(context.getClient()), rand.nextInt(7500) + 5000);
-            context.getEquipment().getItemInSlot((EquipmentSlot.AMULET).getSlot()).interact("Edgeville");
-            if(isTeleblocked()){
-                log("is teleblocked");
-                escapeRun();
-                if(isDead()) {
-                    log("is teleblocked and dead");
+            while (scriptManager.isRunning() && context.getEquipment().getIdForSlot(EquipmentSlot.AMULET.getSlot()) >= Constants.GLORY[0]
+                    && !Constants.EDGE_TELE_AREA.contains(localPlayer)) {
+                log("inside tele");
+
+                gloryWidget = context.getWidgets().getWidget(387).getChild(8).getChild(2);
+                mouse.click(gloryWidget.getRectangle(), true);
+                sleepUntil( () -> gloryMenu.isMenuVisible(), rand.nextInt(500) + 500);
+                gloryMenu.clickAction("Edgeville");
+
+                if (isTeleblocked()) {
+                    log("is teleblocked");
+                    if(escapeRun())
+                        return; // made it out alive
+                    if (isDead()) {
+                        log("is teleblocked and dead");
+                        return;
+                    }
+
+                }
+                log("after sdkfksdmfklsdmf");
+                if (context.sleepUntil(() -> localPlayer.getAnimation() == 714, rand.nextInt(500) + 500)) {
+                    context.sleepUntil(() -> Constants.EDGE_TELE_AREA.contains(localPlayer), rand.nextInt(2500) + 5000);
+                }
+            }
+                log("Before waiting till player arrives in edgeVille in EscapeTeleport");
+                // Wait till player arrives in Edge then open back up inventory.. reset!
+                if (!context.sleepUntil(() -> Constants.EDGE_TELE_AREA.contains(localPlayer), rand.nextInt(7500) + 5000)) {
+                    scriptManager.stop();
+                    context.getTabs().logout();
+                    log(" Used up all tele's and didn't tele to right place");
                     return;
                 }
+                context.getTabs().open(Tab.INVENTORY);
+                log("After waiting till player arrives in edge");
+                context.sleep(rand.nextInt(2000) + 1500);
+                worldHop();
 
-            }
-            log("Before waiting till player arrives in edgeVille in EscapeTeleport");
-            // Wait till player arrives in Edge then open back up inventory.. reset!
-            context.sleepUntil(() -> Constants.EDGE_TELE_AREA.contains(localPlayer), rand.nextInt(7500) + 5000);
-            context.getTabs().open(Tab.INVENTORY);
-            log("After waiting till player arrives in edge");
-            context.sleep(rand.nextInt(2000) + 1500);
-            worldHop();
+
 
 
         }
-
-
     }
 
 
@@ -243,11 +277,16 @@ public class PkWatcher implements Runnable {
     }
 
 
-    public void escapeRun() {
+    public boolean escapeRun() {
         context.getTabs().open(Tab.INVENTORY);
         walkToEdge();
         crossDitch();
         walkToEdge();
+
+        if(isDead())
+            return false;
+        else
+            return true;
 
     }
 
